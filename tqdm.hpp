@@ -1,6 +1,7 @@
 #pragma once
 
 /*
+ *Copyright (c) 2020-2020 <nineKnight> <mikezhen0707@gmail.com>
  *Copyright (c) 2018-2019 <Miguel Raggi> <mraggi@gmail.com>
  *
  *Permission is hereby granted, free of charge, to any person
@@ -79,6 +80,12 @@ void clamp(double& x, double a, double b)
 class progress_bar
 {
 public:
+    progress_bar(const char completion_char = '#',
+                 const char incompletion_char = ' ')
+        : completion_char_(completion_char)
+        , incompletion_char_(incompletion_char)
+    {}
+    
     void restart()
     {
         chronometer_.reset();
@@ -87,6 +94,7 @@ public:
 
     void update(double progress)
     {
+        clamp(progress,0.0,1.0);
         if (time_since_refresh() > min_time_per_update_ || progress==0.0 || progress==1.0)
         {
             reset_refresh_timer();
@@ -112,8 +120,6 @@ public:
 private:
     void display(double progress)
     {
-        clamp(progress,0.0,1.0);
-        
         auto flags = os_->flags();
 
         double t = chronometer_.peek();
@@ -135,7 +141,8 @@ private:
         term_cols_ = std::max(term_cols_, out_size);
         index num_blank = term_cols_ - out_size;
 
-        (*os_) << sbar << suffix << std::string(num_blank, ' ') << std::flush;
+        bar << suffix << std::string(num_blank, ' ');
+        (*os_) << bar.str() << std::flush;
 
         os_->flags(flags);
     }
@@ -143,8 +150,8 @@ private:
     void print_bar(std::stringstream& ss, double filled) const
     {
         auto num_filled = static_cast<index>(std::round(filled*bar_size_));
-        ss << '[' << std::string(num_filled, '#')
-           << std::string(bar_size_ - num_filled, ' ') << ']';
+        ss << '[' << std::string(num_filled, completion_char_)
+           << std::string(bar_size_ - num_filled, incompletion_char_) << ']';
     }
 
     double time_since_refresh() const { return refresh_.peek(); }
@@ -161,6 +168,9 @@ private:
 
     std::string prefix_{};
     std::stringstream suffix_{};
+    
+    const char completion_char_;
+    const char incompletion_char_;
 };
 
 
